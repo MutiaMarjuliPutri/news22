@@ -52,4 +52,6 @@ dependencies {
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.0")
 
     implementation ("com.squareup.picasso:picasso:2.8")
+
+    implementation ("com.github.dhaval2404:imagepicker:2.1")
 }

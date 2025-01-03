@@ -1,11 +1,16 @@
 package com.mutia.news2
 
+import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
+import android.widget.RatingBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.ViewCompat
@@ -26,7 +31,6 @@ class DashboardActivity : AppCompatActivity() {
     private lateinit var floatBtnTambah : FloatingActionButton
     private lateinit var  beritaAdapter: BeritaAdapter
     private lateinit var imgNotFound : ImageView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -34,7 +38,8 @@ class DashboardActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets }
+            insets
+        }
 
         svJudul = findViewById(R.id.svJudul)
         progressBar = findViewById(R.id.progressBar)
@@ -43,27 +48,37 @@ class DashboardActivity : AppCompatActivity() {
         imgNotFound = findViewById(R.id.imgNotFound)
 
 
-        //panggil
+        //panggil method getBerita
         getBerita("")
 
         svJudul.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
-            override fun onQueryTextSubmit(p0: String?): Boolean {
+            override fun onQueryTextSubmit(query: String?): Boolean {
                 return false
             }
 
             override fun onQueryTextChange(pencarian: String?): Boolean {
                 getBerita(pencarian.toString())
-                return false
+                return true
             }
         })
+
+        floatBtnTambah.setOnClickListener(){
+            startActivity(Intent(this@DashboardActivity,TambahBeritaActivity::class.java))
+        }
+
+
+
+
+
     }
 
+    @SuppressLint("SuspiciousIndentation")
     private fun getBerita(judul: String){
         progressBar.visibility = View.VISIBLE
         ApiClient.apiService.getListBerita(judul).enqueue(object : Callback<BeritaResponse>{
-            override fun onResponse(
-                call:
-                Call<BeritaResponse>, response: Response<BeritaResponse>)
+            override fun onResponse(call:
+                                    Call<BeritaResponse>,
+                                    response: Response<BeritaResponse>)
             {
                 if (response.isSuccessful){
                     if (response.body()!!.success){
@@ -72,7 +87,6 @@ class DashboardActivity : AppCompatActivity() {
                         rvBerita.adapter = beritaAdapter
                         beritaAdapter.setData(response.body()!!.data)
                         imgNotFound.visibility = View.GONE
-
                     }
                     else {
                         //jika data tidak ditemukan
@@ -80,14 +94,24 @@ class DashboardActivity : AppCompatActivity() {
                         rvBerita.adapter = beritaAdapter
                         imgNotFound.visibility = View.VISIBLE
 
-                    }}
+                    }
+                }
+                progressBar.visibility = View.GONE
             }
+
             override fun onFailure(call: Call<BeritaResponse>, t: Throwable) {
-                Toast.makeText(this@DashboardActivity,"Error: ${t.message}", Toast.LENGTH_LONG)
+                Toast.makeText(this@DashboardActivity,"Error : ${t.message}",Toast.LENGTH_LONG)
                     .show()
                 progressBar.visibility = View.GONE
-
             }
         })
+    }
+
+
+    private val addBeritaResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Setelah berhasil menambah berita, perbarui daftar berita
+            getBerita("") // Panggil ulang untuk mendapatkan data terbaru
+        }
     }
 }
